@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MessAi
 
-## Getting Started
+Generate coded projects from a single prompt. Each AI role in the chain runs on **its own computer** (different IP).
 
-First, run the development server:
+## How it works (4 computers)
+
+1. **Planner** (computer 1): Takes your prompt and outputs a structured plan (project name, list of files with purposes).
+2. **Coder** (computer 2): For each file in the plan, generates the full file content.
+3. **Reviewer** (computer 3): Reviews the full project and suggests improvements.
+4. **Refiner** (computer 4): For each file, applies the review and outputs final, polished content.
+
+You get a full project: file tree + contents, and can **download as ZIP**.
+
+## Setup
+
+### 1. Run Ollama on each computer
+
+On **each** machine that will host a role:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Expose Ollama on the network (not just localhost)
+export OLLAMA_HOST=0.0.0.0:11434
+ollama serve
+# Pull a model, e.g. ollama pull qwen3:1.7b
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Note each machine’s IP (e.g. `192.168.1.10`, `192.168.1.11`).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 2. Configure MessAi (this app)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Copy env example and set **one URL per role**:
 
-## Learn More
+```bash
+cp .env.local.example .env.local
+```
 
-To learn more about Next.js, take a look at the following resources:
+Edit `.env.local` with one URL per computer:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+ROLE_PLANNER_URL=http://192.168.1.10:11434
+ROLE_PLANNER_MODEL=qwen3:1.7b
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+ROLE_CODER_URL=http://192.168.1.11:11434
+ROLE_CODER_MODEL=qwen3:1.7b
 
-## Deploy on Vercel
+ROLE_REVIEWER_URL=http://192.168.1.12:11434
+ROLE_REVIEWER_MODEL=qwen3:1.7b
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+ROLE_REFINER_URL=http://192.168.1.13:11434
+ROLE_REFINER_MODEL=qwen3:1.7b
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+If you have fewer than 4 machines, point multiple roles at the same URL (e.g. all to `http://localhost:11434`).
+
+### 3. Run MessAi
+
+```bash
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). Enter a prompt (e.g. “A React todo app with Tailwind”), click **Generate project**, then **Download ZIP**.
+
+## Roles
+
+| Role     | Env URL             | Responsibility                            |
+| -------- | ------------------- | ----------------------------------------- |
+| Planner  | `ROLE_PLANNER_URL`  | Turn prompt → JSON plan (files, steps)    |
+| Coder    | `ROLE_CODER_URL`    | Generate code for each file               |
+| Reviewer | `ROLE_REVIEWER_URL` | Review full project, suggest improvements |
+| Refiner  | `ROLE_REFINER_URL`  | Apply review, output final file content   |
+
+Each URL = one computer. Use 4 machines or point multiple roles at the same IP.
+
+## Security
+
+Only use on a trusted network (e.g. home LAN or VPN). Do not expose Ollama or MessAi directly to the internet without proper security.
