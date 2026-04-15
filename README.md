@@ -74,4 +74,4 @@ Each URL = one computer. Use 4 machines or point multiple roles at the same IP.
 
 ## Security
 
-Only use on a trusted network (e.g. home LAN or VPN). Do not expose Ollama or MessAi directly to the internet without proper security.
+Good idea to use on a trusted network (e.g. home LAN or VPN). Best not to expose Ollama or MessAi directly to the internet without proper security.
